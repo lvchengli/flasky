@@ -382,3 +382,56 @@ class Comment(db.Model):
 
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
+
+class Warning(db.Model):
+    __tablename__ = 'warnings'
+    id = db.Column(db.Integer, primary_key=True)
+    resource_name = db.Column(db.String(64))
+    resource_oneport_id = db.Column(db.Integer)
+    resource_oneport_name = db.Column(db.String(64))
+    alarm_detail = db.Column(db.String(64))
+
+    trigger_time = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    handle_time = db.Column(db.DateTime)
+    handle_user_name = db.Column(db.String(64))
+
+    level = db.Column(db.Integer)
+    status = db.Column(db.Integer)
+
+    def to_json(self):
+        json_post = {
+            'id': self.id,
+            'resource_name': self.resource_name,
+            'resource_oneport_id': self.resource_oneport_id,
+            'resource_oneport_name': self.resource_oneport_name,
+            'alarm_detail': self.alarm_detail,
+
+            'trigger_time': self.trigger_time,
+            'handle_time': self.handle_time,
+            'handle_user_name': self.handle_user_name,
+
+            'level': self.level,
+            'status': self.status,
+        }
+        return json_post
+
+    @staticmethod
+    def generate_fake(count=10):
+        from sqlalchemy.exc import IntegrityError
+        from random import seed
+        import forgery_py
+
+        resource_name = ['vm', 'volume', 'network']
+        seed()
+        for i in range(count):
+            u = Warning(resource_name=resource_name[i % 3],
+                     resource_oneport_id=1,
+                     resource_oneport_name=forgery_py.lorem_ipsum.word(),
+                     alarm_detail=forgery_py.name.full_name(),
+                     trigger_time=forgery_py.date.date(True),
+                     handle_time=forgery_py.date.date(True),
+                     level=i % 3 + 1,
+                     status=1,
+                     handle_user_name=forgery_py.lorem_ipsum.word())
+            db.session.add(u)
+            db.session.commit()
